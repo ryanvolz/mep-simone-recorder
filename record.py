@@ -39,6 +39,7 @@ def run(freq_mhz=31.65, channel_str="A,B", config_name="default"):
     client.subscribe(f"dt/simone/recorder/{node_id}/status")
     client.subscribe(f"dt/simone/recorder/{node_id}/request")
     client.loop_start()
+    client.publish("rfsoc/command", json.dumps({"task_name": "reset"}))
     client.publish(
         "rfsoc/command",
         json.dumps({"task_name": "set", "arguments": f"freq_IF {freq_mhz}"}),
