@@ -45,6 +45,12 @@ def run(freq_mhz=31.65, channel_str="A,B", config_name="default"):
     )
     client.publish(
         "rfsoc/command",
+        json.dumps(
+            {"task_name": "set", "arguments": f"freq_metadata {freq_mhz * 1e6}"}
+        ),
+    )
+    client.publish(
+        "rfsoc/command",
         json.dumps({"task_name": "set", "arguments": f"channel {channel_str}"}),
     )
     client.publish(
@@ -57,6 +63,7 @@ def run(freq_mhz=31.65, channel_str="A,B", config_name="default"):
     )
     time.sleep(10)
     client.publish("rfsoc/command", json.dumps({"task_name": "capture_next_pps"}))
+    client.publish("rfsoc/command", json.dumps({"task_name": "get tlm"}))
     try:
         while True:
             time.sleep(1)
