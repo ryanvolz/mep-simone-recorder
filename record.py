@@ -6,7 +6,7 @@ import os
 import socket
 import time
 
-from paho.mqtt import client as mqtt_client
+from paho.mqtt import client as mqtt
 
 logger = logging.getLogger("simone_record")
 logger.setLevel(os.environ.get("SIMONE_RECORD_LOG_LEVEL", "INFO"))
@@ -16,11 +16,11 @@ _console_handler.setLevel(logging.DEBUG)
 logger.addHandler(_console_handler)
 
 
-def on_connect(client, userdata, flags, rc):
-    if rc == 0:
+def on_connect(client, userdata, flags, reason_code, properties):
+    if reason_code == 0:
         logger.info("Connected to MQTT broker!")
     else:
-        logger.info(f"Failed to connect to MQTT broker, return code {rc}")
+        logger.info(f"Failed to connect to MQTT broker, return code {reason_code}")
 
 
 def on_message(client, userdata, msg):
@@ -29,7 +29,9 @@ def on_message(client, userdata, msg):
 
 def run(freq_mhz=31.65, channel_str="A,B", config_name="default"):
     node_id = socket.gethostname()
-    client = mqtt_client.Client(client_id=f"simone_record_cli_{node_id}")
+    client = mqtt.Client(
+        mqtt.CallbackAPIVersion.VERSION2, client_id=f"simone_record_cli_{node_id}"
+    )
     client.on_connect = on_connect
     client.connect("localhost", 1883)
     client.on_message = on_message
