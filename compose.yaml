@@ -13,7 +13,6 @@ services:
             - RECORDER_COMMAND_TOPIC=cmd/simone/{service.name}/{service.node_id}/request
             - RECORDER_CONFIG_PATH=/config
             - RECORDER_OUTPUT_PATH=/data/ringbuffer
-            - RECORDER_NAME=simone_recorder
             - RECORDER_RAM_RINGBUFFER_PATH=/ramdisk
             - RECORDER_RESPONSE_TOPIC=dt/simone/{service.name}/{service.node_id}/request
             - RECORDER_START_CONFIG=default

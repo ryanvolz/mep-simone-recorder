@@ -34,8 +34,8 @@ def run(freq_mhz=31.65, channel_str="A,B", config_name="default"):
     client.connect("localhost", 1883)
     client.on_message = on_message
     client.subscribe("rfsoc/status")
-    client.subscribe(f"dt/simone/simone_recorder/{node_id}/status")
-    client.subscribe(f"dt/simone/simone_recorder/{node_id}/request")
+    client.subscribe(f"dt/simone/recorder/{node_id}/status")
+    client.subscribe(f"dt/simone/recorder/{node_id}/request")
     client.loop_start()
     client.publish(
         "rfsoc/command",
@@ -46,11 +46,11 @@ def run(freq_mhz=31.65, channel_str="A,B", config_name="default"):
         json.dumps({"task_name": "set", "arguments": f"channel {channel_str}"}),
     )
     client.publish(
-        f"dt/simone/simone_recorder/{node_id}/request",
+        f"dt/simone/recorder/{node_id}/request",
         json.dumps({"task_name": "config.load", "arguments": {"name": config_name}}),
     )
     client.publish(
-        f"dt/simone/simone_recorder/{node_id}/request",
+        f"dt/simone/recorder/{node_id}/request",
         json.dumps({"task_name": "enable"}),
     )
     time.sleep(10)
@@ -62,7 +62,7 @@ def run(freq_mhz=31.65, channel_str="A,B", config_name="default"):
         pass
     finally:
         client.publish(
-            f"dt/simone/simone_recorder/{node_id}/request",
+            f"dt/simone/recorder/{node_id}/request",
             json.dumps({"task_name": "disable"}),
         )
         client.loop_stop()
