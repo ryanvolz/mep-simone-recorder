@@ -343,10 +343,15 @@ def build_config_parser():
 
 
 class App(holoscan.core.Application):
-    def add_channel_flow(self, ch_kwargs, cuda_stream_pool):
+    def add_channel_flow(self, ch, cuda_stream_pool):
+        ch_kwargs = self.kwargs(ch)
+
+        if not ch_kwargs["enabled"]:
+            return
+
         basic_net_rx = basic_network.BasicNetworkOpRx(
             self,
-            name="basic_network_rx",
+            name=f"{ch}_basic_network_rx",
             **ch_kwargs["basic_network"],
         )
         basic_net_rx.spec.outputs["burst_out"].connector(
@@ -359,7 +364,7 @@ class App(holoscan.core.Application):
         net_connector_rx = rf_array.NetConnectorBasic(
             self,
             cuda_stream_pool,
-            name="net_connector_rx",
+            name=f"{ch}_net_connector_rx",
             **packet_kwargs,
         )
         net_connector_rx.spec.inputs["burst_in"].connector(
@@ -383,7 +388,7 @@ class App(holoscan.core.Application):
 
         if ch_kwargs["pipeline"]["selector"]:
             selector = rf_array.SubchannelSelect_sc16(
-                self, cuda_stream_pool, name="selector", **ch_kwargs["selector"]
+                self, cuda_stream_pool, name=f"{ch}_selector", **ch_kwargs["selector"]
             )
             selector.spec.inputs["rf_in"].connector(
                 holoscan.core.IOSpec.ConnectorType.DOUBLE_BUFFER,
@@ -402,7 +407,7 @@ class App(holoscan.core.Application):
             converter = rf_array.TypeConversionComplexIntToFloat(
                 self,
                 cuda_stream_pool,
-                name="converter",
+                name=f"{ch}_converter",
             )
             converter.spec.inputs["rf_in"].connector(
                 holoscan.core.IOSpec.ConnectorType.DOUBLE_BUFFER,
@@ -415,7 +420,7 @@ class App(holoscan.core.Application):
 
             if ch_kwargs["pipeline"]["rotator"]:
                 rotator = rf_array.RotatorScheduled(
-                    self, cuda_stream_pool, name="rotator", **ch_kwargs["rotator"]
+                    self, cuda_stream_pool, name=f"{ch}_rotator", **ch_kwargs["rotator"]
                 )
                 self.add_flow(last_op, rotator)
                 last_op = rotator
@@ -425,7 +430,10 @@ class App(holoscan.core.Application):
                     last_chunk_shape, **ch_kwargs["spec_resampler"]
                 )
                 spec_resampler = rf_array.ResamplePoly(
-                    self, cuda_stream_pool, name="spec_resampler", **resample_kwargs
+                    self,
+                    cuda_stream_pool,
+                    name=f"{ch}_spec_resampler",
+                    **resample_kwargs,
                 )
                 self.add_flow(last_op, spec_resampler)
                 last_op = spec_resampler
@@ -440,7 +448,7 @@ class App(holoscan.core.Application):
                 spectrogram = Spectrogram(
                     self,
                     cuda_stream_pool,
-                    name="spectrogram",
+                    name=f"{ch}_spectrogram",
                     **add_chunk_kwargs(last_chunk_shape, **ch_kwargs["spectrogram"]),
                 )
                 # Queue policy is currently set by specifying a connector in setup()
@@ -465,14 +473,14 @@ class App(holoscan.core.Application):
                         # holoscan.conditions.MessageAvailableCondition(
                         #     self,
                         #     receiver="spec_in",
-                        #     name="spectrogram_mqtt_message_available",
+                        #     name=f"{ch}_spectrogram_mqtt_message_available",
                         # ),
                         # holoscan.conditions.CudaStreamCondition(
-                        #     self, receiver="spec_in", name="spectrogram_mqtt_stream_sync"
+                        #     self, receiver="spec_in", name=f"{ch}_spectrogram_mqtt_stream_sync"
                         # ),
                         # # no downstream condition, and we don't want one
                         cuda_stream_pool,
-                        name="spectrogram_mqtt",
+                        name=f"{ch}_spectrogram_mqtt",
                         **spec_mqtt_kwargs,
                     )
                     self.add_flow(spectrogram, spectrogram_mqtt)
@@ -494,14 +502,14 @@ class App(holoscan.core.Application):
                         # holoscan.conditions.MessageAvailableCondition(
                         #     self,
                         #     receiver="spec_in",
-                        #     name="spectrogram_output_message_available",
+                        #     name=f"{ch}_spectrogram_output_message_available",
                         # ),
                         # holoscan.conditions.CudaStreamCondition(
-                        #     self, receiver="spec_in", name="spectrogram_output_stream_sync"
+                        #     self, receiver="spec_in", name=f"{ch}_spectrogram_output_stream_sync"
                         # ),
                         # # no downstream condition, and we don't want one
                         cuda_stream_pool,
-                        name="spectrogram_output",
+                        name=f"{ch}_spectrogram_output",
                         **spec_out_kwargs,
                     )
                     self.add_flow(spectrogram, spectrogram_output)
@@ -511,7 +519,7 @@ class App(holoscan.core.Application):
                     last_chunk_shape, **ch_kwargs["resampler0"]
                 )
                 resampler0 = rf_array.ResamplePoly(
-                    self, cuda_stream_pool, name="resampler0", **resample_kwargs
+                    self, cuda_stream_pool, name=f"{ch}_resampler0", **resample_kwargs
                 )
                 self.add_flow(last_op, resampler0)
                 last_op = resampler0
@@ -527,7 +535,7 @@ class App(holoscan.core.Application):
                     last_chunk_shape, **ch_kwargs["resampler1"]
                 )
                 resampler1 = rf_array.ResamplePoly(
-                    self, cuda_stream_pool, name="resampler1", **resample_kwargs
+                    self, cuda_stream_pool, name=f"{ch}_resampler1", **resample_kwargs
                 )
                 self.add_flow(last_op, resampler1)
                 last_op = resampler1
@@ -543,7 +551,7 @@ class App(holoscan.core.Application):
                     last_chunk_shape, **ch_kwargs["resampler2"]
                 )
                 resampler2 = rf_array.ResamplePoly(
-                    self, cuda_stream_pool, name="resampler2", **resample_kwargs
+                    self, cuda_stream_pool, name=f"{ch}_resampler2", **resample_kwargs
                 )
                 self.add_flow(last_op, resampler2)
                 last_op = resampler2
@@ -558,7 +566,7 @@ class App(holoscan.core.Application):
                 int_converter = rf_array.TypeConversionComplexFloatToInt(
                     self,
                     cuda_stream_pool,
-                    name="int_converter",
+                    name=f"{ch}_int_converter",
                 )
                 self.add_flow(last_op, int_converter)
                 last_op = int_converter
@@ -571,7 +579,7 @@ class App(holoscan.core.Application):
                 drf_sink = rf_array.DigitalRFSink_fc32(
                     self,
                     cuda_stream_pool,
-                    name="drf_sink",
+                    name=f"{ch}_drf_sink",
                     **add_chunk_kwargs(last_chunk_shape, **ch_kwargs["drf_sink"]),
                 )
                 drf_sink.spec.inputs["rf_in"].connector(
@@ -584,7 +592,7 @@ class App(holoscan.core.Application):
                 drf_sink = rf_array.DigitalRFSink_sc16(
                     self,
                     cuda_stream_pool,
-                    name="drf_sink",
+                    name=f"{ch}_drf_sink",
                     **add_chunk_kwargs(last_chunk_shape, **ch_kwargs["drf_sink"]),
                 )
                 drf_sink.spec.inputs["rf_in"].connector(
@@ -597,7 +605,7 @@ class App(holoscan.core.Application):
             if ch_kwargs["pipeline"]["metadata"]:
                 dmd_sink = DigitalMetadataSink(
                     self,
-                    name="dmd_sink",
+                    name=f"{ch}_dmd_sink",
                     output_path=ch_kwargs["drf_sink"]["output_path"],
                     metadata_dir=f"{ch_kwargs['drf_sink']['channel_dir']}/metadata",
                     subdir_cadence_secs=ch_kwargs["drf_sink"]["subdir_cadence_secs"],
@@ -625,9 +633,7 @@ class App(holoscan.core.Application):
         )
 
         for ch_idx in range(2):
-            ch_kwargs = self.kwargs(f"channel{ch_idx}")
-            if ch_kwargs["enabled"]:
-                self.add_channel_flow(ch_kwargs, cuda_stream_pool)
+            self.add_channel_flow(f"channel{ch_idx}", cuda_stream_pool)
 
 
 def main():
