@@ -336,7 +336,7 @@ def build_config_parser():
     parser.add_argument("--output_path", type=typing.Optional[os.PathLike], default=".")
 
     # add channel-based arguments
-    for ch_idx in range(4):
+    for ch_idx in range(2):
         build_channel_subparser(parser, f"channel{ch_idx}")
 
     return parser
@@ -624,13 +624,10 @@ class App(holoscan.core.Application):
             max_size=0,
         )
 
-        channels_kwargs = self.kwargs("channels")
-        for ch_key, enabled in channels_kwargs.items():
-            if not enabled:
-                continue
-
-            ch_kwargs = self.kwargs(ch_key)
-            self.add_channel_flow(ch_kwargs, cuda_stream_pool)
+        for ch_idx in range(2):
+            ch_kwargs = self.kwargs(f"channel{ch_idx}")
+            if ch_kwargs["enabled"]:
+                self.add_channel_flow(ch_kwargs, cuda_stream_pool)
 
 
 def main():
