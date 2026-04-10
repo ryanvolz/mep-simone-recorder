@@ -48,11 +48,11 @@ def run(freq_mhz=31.65, channel_str="A,B", config_name="default"):
         json.dumps({"task_name": "set", "arguments": f"channel {channel_str}"}),
     )
     client.publish(
-        f"dt/simone/recorder/{node_id}/request",
+        f"cmd/simone/recorder/{node_id}/request",
         json.dumps({"task_name": "config.load", "arguments": {"name": config_name}}),
     )
     client.publish(
-        f"dt/simone/recorder/{node_id}/request",
+        f"cmd/simone/recorder/{node_id}/request",
         json.dumps({"task_name": "enable"}),
     )
     time.sleep(10)
@@ -64,7 +64,7 @@ def run(freq_mhz=31.65, channel_str="A,B", config_name="default"):
         pass
     finally:
         client.publish(
-            f"dt/simone/recorder/{node_id}/request",
+            f"cmd/simone/recorder/{node_id}/request",
             json.dumps({"task_name": "disable"}),
         )
         client.loop_stop()
