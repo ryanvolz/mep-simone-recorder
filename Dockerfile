@@ -20,6 +20,9 @@ LABEL org.opencontainers.image.description="Holoscan SIMONe recorder"
 COPY --chmod=777 src/simone_recorder.py /app/simone_recorder.py
 COPY --chmod=777 config /config
 
+# Generate full example configuration with defaults
+RUN python3 /app/simone_recorder.py --print_config > /config/all.example.yaml
+
 # Set up environment variable defaults for this image
 ENV RECORDER_CONFIG_PATH=/config
 ENV RECORDER_OUTPUT_PATH=/data/ringbuffer
