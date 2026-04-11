@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ghcr.io/ryanvolz/holoscan_recorder/mep:latest AS simone
+FROM ghcr.io/ryanvolz/holoscan_recorder/mep:edge AS simone
 LABEL org.opencontainers.image.description="Holoscan SIMONe recorder"
 
 # Copy scripts specific to this image
