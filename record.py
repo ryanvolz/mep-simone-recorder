@@ -25,6 +25,18 @@ def on_connect(client, userdata, flags, reason_code, properties):
 
 def on_message(client, userdata, msg):
     logger.info(msg.payload.decode())
+    if (
+        msg.topic.startswith("dt/simone/recorder")
+        and msg.topic.split("/")[-1] == "status"
+    ):
+        payload = json.loads(msg.payload)
+        if payload["state"] == "waiting":
+            # recorder stopped, restart it
+            node_id = socket.gethostname()
+            client.publish(
+                f"cmd/simone/recorder/{node_id}/request",
+                json.dumps({"task_name": "enable"}),
+            )
 
 
 def run(freq_mhz=31.65, channel_str="A,B", config_name="default"):
@@ -36,7 +48,6 @@ def run(freq_mhz=31.65, channel_str="A,B", config_name="default"):
     client.connect("localhost", 1883)
     client.on_message = on_message
     client.subscribe("rfsoc/status")
-    client.subscribe(f"dt/simone/recorder/{node_id}/status")
     client.subscribe(f"dt/simone/recorder/{node_id}/request")
     client.loop_start()
     client.publish("rfsoc/command", json.dumps({"task_name": "reset"}))
@@ -65,6 +76,8 @@ def run(freq_mhz=31.65, channel_str="A,B", config_name="default"):
     time.sleep(10)
     client.publish("rfsoc/command", json.dumps({"task_name": "capture_next_pps"}))
     client.publish("rfsoc/command", json.dumps({"task_name": "get tlm"}))
+    # now that we've started, monitor recorder status to be able to restart if it stops
+    client.subscribe(f"dt/simone/recorder/{node_id}/status")
     try:
         while True:
             time.sleep(1)
