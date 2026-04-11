@@ -12,12 +12,12 @@ services:
             - RECORDER_ANNOUNCE_TOPIC=dt/simone/{service.name}/{service.node_id}/announce
             - RECORDER_COMMAND_TOPIC=cmd/simone/{service.name}/{service.node_id}/request
             - RECORDER_CONFIG_PATH=/config
-            - RECORDER_OUTPUT_PATH=/data/ringbuffer
+            - RECORDER_OUTPUT_PATH=/data/simone/ringbuffer
             - RECORDER_RAM_RINGBUFFER_PATH=/ramdisk
             - RECORDER_RESPONSE_TOPIC=dt/simone/{service.name}/{service.node_id}/request
             - RECORDER_START_CONFIG=default
             - RECORDER_STATUS_TOPIC=dt/simone/{service.name}/{service.node_id}/status
-            - RECORDER_TMP_RINGBUFFER_PATH=/data/tmp-ringbuffer
+            - RECORDER_TMP_RINGBUFFER_PATH=/data/simone/tmp-ringbuffer
         network_mode: host
         pull_policy: build
         restart: unless-stopped
