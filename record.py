@@ -39,7 +39,7 @@ def on_message(client, userdata, msg):
             )
 
 
-def run(freq_mhz=31.65, channel_str="A,B", config_name="default"):
+def run(freq_mhz=32, channel_str="A,B", config_name="default"):
     node_id = socket.gethostname()
     client = mqtt.Client(
         mqtt.CallbackAPIVersion.VERSION2, client_id=f"simone_record_cli_{node_id}"
