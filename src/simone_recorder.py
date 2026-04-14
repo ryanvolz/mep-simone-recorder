@@ -348,7 +348,7 @@ class App(holoscan.core.Application):
     def add_spectrogram_flow(self, ch, cuda_stream_pool, op_dict):
         ch_kwargs = self.kwargs(ch)
 
-        after_op_name = ch_kwargs["pipeline"].get("spectrogram_after", "rotator")
+        after_op_name = ch_kwargs["pipeline"].get("spec_after", "rotator")
         last_op, last_chunk_shape = op_dict[after_op_name]
 
         if ch_kwargs["pipeline"]["spectrogram"]:
