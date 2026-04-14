@@ -15,35 +15,17 @@
 ---
 channel0:
   pipeline:
-    spec_resampler: false
     spectrogram: false
   basic_network:
     dst_port: 60134 # UDP destination port for packets
-  resampler0:
-    up: 1
-    down: 32
-    outrate_cutoff: 1.0
-    # transition_width: 2 * (cutoff - 1 / remaining_dec)
-    #                   2 * (1.0 - 1 / 20) = 1.9
-    outrate_transition_width: 1.9
-    attenuation_db: 102.5
   drf_sink:
     channel_dir: simone/ch000
 
 channel1:
   enabled: true
   pipeline:
-    spec_resampler: false
     spectrogram: false
   basic_network:
     dst_port: 60133 # UDP destination port for packets
-  resampler0:
-    up: 1
-    down: 32
-    outrate_cutoff: 1.0
-    # transition_width: 2 * (cutoff - 1 / remaining_dec)
-    #                   2 * (1.0 - 1 / 20) = 1.9
-    outrate_transition_width: 1.9
-    attenuation_db: 102.5
   drf_sink:
     channel_dir: simone/ch001

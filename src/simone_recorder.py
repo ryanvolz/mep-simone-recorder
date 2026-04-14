@@ -104,6 +104,14 @@ class PipelineParams:
     "Enable / disable complex int to float converter"
     rotator: bool = True
     "Enable / disable frequency rotator"
+    resampler0: bool = True
+    "Enable / disable the first stage resampler"
+    resampler1: bool = True
+    "Enable / disable the second stage resampler"
+    resampler2: bool = True
+    "Enable / disable the third stage resampler"
+    spec_after: str = "rotator"
+    "Which operator form converter through resampler2 to place the spectrogram after"
     spec_resampler: bool = True
     "Enable / disable the zeroth stage pre-spectrogram resampler"
     spectrogram: bool = True
@@ -112,12 +120,6 @@ class PipelineParams:
     "Enable / disable spectrogram output over MQTT"
     spectrogram_output: bool = True
     "Enable / disable spectrogram output to files"
-    resampler0: bool = True
-    "Enable / disable the first stage resampler"
-    resampler1: bool = True
-    "Enable / disable the second stage resampler"
-    resampler2: bool = True
-    "Enable / disable the third stage resampler"
     int_converter: bool = False
     "Enable / disable complex float to int converter"
     digital_rf: bool = True
@@ -190,6 +192,49 @@ def build_channel_subparser(parser, ch):
         ),
     )
     parser.add_argument(
+        f"--{ch}.resampler0",
+        type=ResamplePolyParams,
+        default=ResamplePolyParams(
+            up=1,
+            down=32,
+            outrate_cutoff=1.0,
+            # transition_width: 2 * (cutoff - 1 / remaining_dec)
+            #                   2 * (1.0 - 1 / 20) = 1.9
+            outrate_transition_width=1.9,
+            # tweak attenuation to get desired number of taps indicated by
+            # scipy.signal.kaiserord(attenuation_db, outrate_transition_width / down)
+            attenuation_db=102.5,
+        ),
+    )
+    parser.add_argument(
+        f"--{ch}.resampler1",
+        type=ResamplePolyParams,
+        default=ResamplePolyParams(
+            up=1,
+            down=5,
+            outrate_cutoff=1.0,
+            # transition_width: 2 * (cutoff - 1 / remaining_dec)
+            #                   2 * (1.0 - 1 / 4) = 1.5
+            outrate_transition_width=1.5,
+            # tweak attenuation to get desired number of taps indicated by
+            # scipy.signal.kaiserord(attenuation_db, outrate_transition_width / down)
+            attenuation_db=102,
+        ),
+    )
+    parser.add_argument(
+        f"--{ch}.resampler2",
+        type=ResamplePolyParams,
+        default=ResamplePolyParams(
+            up=1,
+            down=4,
+            outrate_cutoff=1.0,
+            outrate_transition_width=0.2,
+            # tweak attenuation to get desired number of taps indicated by
+            # scipy.signal.kaiserord(attenuation_db, outrate_transition_width / down)
+            attenuation_db=99,
+        ),
+    )
+    parser.add_argument(
         f"--{ch}.spec_resampler",
         type=ResamplePolyParams,
         default=ResamplePolyParams(
@@ -241,49 +286,6 @@ def build_channel_subparser(parser, ch):
             snr_db_min=-5,
             snr_db_max=30,
             plot_subdir="spectrograms/ch000",
-        ),
-    )
-    parser.add_argument(
-        f"--{ch}.resampler0",
-        type=ResamplePolyParams,
-        default=ResamplePolyParams(
-            up=1,
-            down=16,
-            outrate_cutoff=1.0,
-            # transition_width: 2 * (cutoff - 1 / remaining_dec)
-            #                   2 * (1.0 - 1 / 20) = 1.9
-            outrate_transition_width=1.9,
-            # tweak attenuation to get desired number of taps indicated by
-            # scipy.signal.kaiserord(attenuation_db, outrate_transition_width / down)
-            attenuation_db=101,
-        ),
-    )
-    parser.add_argument(
-        f"--{ch}.resampler1",
-        type=ResamplePolyParams,
-        default=ResamplePolyParams(
-            up=1,
-            down=5,
-            outrate_cutoff=1.0,
-            # transition_width: 2 * (cutoff - 1 / remaining_dec)
-            #                   2 * (1.0 - 1 / 4) = 1.5
-            outrate_transition_width=1.5,
-            # tweak attenuation to get desired number of taps indicated by
-            # scipy.signal.kaiserord(attenuation_db, outrate_transition_width / down)
-            attenuation_db=102,
-        ),
-    )
-    parser.add_argument(
-        f"--{ch}.resampler2",
-        type=ResamplePolyParams,
-        default=ResamplePolyParams(
-            up=1,
-            down=4,
-            outrate_cutoff=1.0,
-            outrate_transition_width=0.2,
-            # tweak attenuation to get desired number of taps indicated by
-            # scipy.signal.kaiserord(attenuation_db, outrate_transition_width / down)
-            attenuation_db=99,
         ),
     )
     parser.add_argument(
@@ -343,6 +345,99 @@ def build_config_parser():
 
 
 class App(holoscan.core.Application):
+    def add_spectrogram_flow(self, ch, cuda_stream_pool, op_dict):
+        ch_kwargs = self.kwargs(ch)
+
+        after_op_name = ch_kwargs["pipeline"].get("spectrogram_after", "rotator")
+        last_op, last_chunk_shape = op_dict[after_op_name]
+
+        if ch_kwargs["pipeline"]["spectrogram"]:
+            if ch_kwargs["pipeline"]["spec_resampler"]:
+                resample_kwargs = add_chunk_kwargs(
+                    last_chunk_shape, **ch_kwargs["spec_resampler"]
+                )
+                spec_resampler = rf_array.ResamplePoly(
+                    self,
+                    cuda_stream_pool,
+                    name=f"{ch}_spec_resampler",
+                    **resample_kwargs,
+                )
+                self.add_flow(last_op, spec_resampler)
+                last_op = spec_resampler
+                last_chunk_shape = (
+                    last_chunk_shape[0]
+                    * resample_kwargs["up"]
+                    // resample_kwargs["down"],
+                    last_chunk_shape[1],
+                )
+
+            spectrogram = Spectrogram(
+                self,
+                cuda_stream_pool,
+                name=f"{ch}_spectrogram",
+                **add_chunk_kwargs(last_chunk_shape, **ch_kwargs["spectrogram"]),
+            )
+            # Queue policy is currently set by specifying a connector in setup()
+            # # drop old messages rather than get backed up by slow
+            # # downstream operators
+            # spectrogram.queue_policy(
+            #     port_name="spec_out",
+            #     port_type=holoscan.core.IOSpec.IOType.OUTPUT,
+            #     policy=holoscan.core.IOSpec.QueuePolicy.POP,
+            # )
+            self.add_flow(last_op, spectrogram)
+
+            if ch_kwargs["pipeline"]["spectrogram_mqtt"]:
+                spec_mqtt_kwargs = ch_kwargs["spectrogram_mqtt"]
+                spec_mqtt_kwargs.update(
+                    spec_sample_cadence=spectrogram.spec_sample_cadence,
+                )
+                spectrogram_mqtt = SpectrogramMQTT(
+                    self,
+                    ## CudaStreamCondition doesn't work with a message queue size
+                    ## larger than 1, so get by without it for now
+                    # holoscan.conditions.MessageAvailableCondition(
+                    #     self,
+                    #     receiver="spec_in",
+                    #     name=f"{ch}_spectrogram_mqtt_message_available",
+                    # ),
+                    # holoscan.conditions.CudaStreamCondition(
+                    #     self, receiver="spec_in", name=f"{ch}_spectrogram_mqtt_stream_sync"
+                    # ),
+                    # # no downstream condition, and we don't want one
+                    cuda_stream_pool,
+                    name=f"{ch}_spectrogram_mqtt",
+                    **spec_mqtt_kwargs,
+                )
+                self.add_flow(spectrogram, spectrogram_mqtt)
+
+            if ch_kwargs["pipeline"]["spectrogram_output"]:
+                spec_out_kwargs = ch_kwargs["spectrogram_output"]
+                spec_out_kwargs.update(
+                    nfft=spectrogram.nfft,
+                    spec_sample_cadence=spectrogram.spec_sample_cadence,
+                    num_subchannels=spectrogram.num_subchannels,
+                    data_subdir=(f"{ch_kwargs['drf_sink']['channel_dir']}_spectrogram"),
+                )
+                spectrogram_output = SpectrogramOutput(
+                    self,
+                    ## CudaStreamCondition doesn't work with a message queue size
+                    ## larger than 1, so get by without it for now
+                    # holoscan.conditions.MessageAvailableCondition(
+                    #     self,
+                    #     receiver="spec_in",
+                    #     name=f"{ch}_spectrogram_output_message_available",
+                    # ),
+                    # holoscan.conditions.CudaStreamCondition(
+                    #     self, receiver="spec_in", name=f"{ch}_spectrogram_output_stream_sync"
+                    # ),
+                    # # no downstream condition, and we don't want one
+                    cuda_stream_pool,
+                    name=f"{ch}_spectrogram_output",
+                    **spec_out_kwargs,
+                )
+                self.add_flow(spectrogram, spectrogram_output)
+
     def add_channel_flow(self, ch, cuda_stream_pool):
         ch_kwargs = self.kwargs(ch)
 
@@ -404,6 +499,8 @@ class App(holoscan.core.Application):
             )
 
         if ch_kwargs["pipeline"]["converter"]:
+            op_dict = {}
+
             converter = rf_array.TypeConversionComplexIntToFloat(
                 self,
                 cuda_stream_pool,
@@ -417,6 +514,7 @@ class App(holoscan.core.Application):
             self.add_flow(last_op, converter)
             last_op = converter
             last_buffer_capacity = 1
+            op_dict["converter"] = (converter, last_chunk_shape)
 
             if ch_kwargs["pipeline"]["rotator"]:
                 rotator = rf_array.RotatorScheduled(
@@ -424,95 +522,7 @@ class App(holoscan.core.Application):
                 )
                 self.add_flow(last_op, rotator)
                 last_op = rotator
-
-            if ch_kwargs["pipeline"]["spec_resampler"]:
-                resample_kwargs = add_chunk_kwargs(
-                    last_chunk_shape, **ch_kwargs["spec_resampler"]
-                )
-                spec_resampler = rf_array.ResamplePoly(
-                    self,
-                    cuda_stream_pool,
-                    name=f"{ch}_spec_resampler",
-                    **resample_kwargs,
-                )
-                self.add_flow(last_op, spec_resampler)
-                last_op = spec_resampler
-                last_chunk_shape = (
-                    last_chunk_shape[0]
-                    * resample_kwargs["up"]
-                    // resample_kwargs["down"],
-                    last_chunk_shape[1],
-                )
-
-            if ch_kwargs["pipeline"]["spectrogram"]:
-                spectrogram = Spectrogram(
-                    self,
-                    cuda_stream_pool,
-                    name=f"{ch}_spectrogram",
-                    **add_chunk_kwargs(last_chunk_shape, **ch_kwargs["spectrogram"]),
-                )
-                # Queue policy is currently set by specifying a connector in setup()
-                # # drop old messages rather than get backed up by slow
-                # # downstream operators
-                # spectrogram.queue_policy(
-                #     port_name="spec_out",
-                #     port_type=holoscan.core.IOSpec.IOType.OUTPUT,
-                #     policy=holoscan.core.IOSpec.QueuePolicy.POP,
-                # )
-                self.add_flow(last_op, spectrogram)
-
-                if ch_kwargs["pipeline"]["spectrogram_mqtt"]:
-                    spec_mqtt_kwargs = ch_kwargs["spectrogram_mqtt"]
-                    spec_mqtt_kwargs.update(
-                        spec_sample_cadence=spectrogram.spec_sample_cadence,
-                    )
-                    spectrogram_mqtt = SpectrogramMQTT(
-                        self,
-                        ## CudaStreamCondition doesn't work with a message queue size
-                        ## larger than 1, so get by without it for now
-                        # holoscan.conditions.MessageAvailableCondition(
-                        #     self,
-                        #     receiver="spec_in",
-                        #     name=f"{ch}_spectrogram_mqtt_message_available",
-                        # ),
-                        # holoscan.conditions.CudaStreamCondition(
-                        #     self, receiver="spec_in", name=f"{ch}_spectrogram_mqtt_stream_sync"
-                        # ),
-                        # # no downstream condition, and we don't want one
-                        cuda_stream_pool,
-                        name=f"{ch}_spectrogram_mqtt",
-                        **spec_mqtt_kwargs,
-                    )
-                    self.add_flow(spectrogram, spectrogram_mqtt)
-
-                if ch_kwargs["pipeline"]["spectrogram_output"]:
-                    spec_out_kwargs = ch_kwargs["spectrogram_output"]
-                    spec_out_kwargs.update(
-                        nfft=spectrogram.nfft,
-                        spec_sample_cadence=spectrogram.spec_sample_cadence,
-                        num_subchannels=spectrogram.num_subchannels,
-                        data_subdir=(
-                            f"{ch_kwargs['drf_sink']['channel_dir']}_spectrogram"
-                        ),
-                    )
-                    spectrogram_output = SpectrogramOutput(
-                        self,
-                        ## CudaStreamCondition doesn't work with a message queue size
-                        ## larger than 1, so get by without it for now
-                        # holoscan.conditions.MessageAvailableCondition(
-                        #     self,
-                        #     receiver="spec_in",
-                        #     name=f"{ch}_spectrogram_output_message_available",
-                        # ),
-                        # holoscan.conditions.CudaStreamCondition(
-                        #     self, receiver="spec_in", name=f"{ch}_spectrogram_output_stream_sync"
-                        # ),
-                        # # no downstream condition, and we don't want one
-                        cuda_stream_pool,
-                        name=f"{ch}_spectrogram_output",
-                        **spec_out_kwargs,
-                    )
-                    self.add_flow(spectrogram, spectrogram_output)
+                op_dict["rotator"] = (rotator, last_chunk_shape)
 
             if ch_kwargs["pipeline"]["resampler0"]:
                 resample_kwargs = add_chunk_kwargs(
@@ -529,6 +539,7 @@ class App(holoscan.core.Application):
                     // resample_kwargs["down"],
                     last_chunk_shape[1],
                 )
+                op_dict["resampler0"] = (resampler0, last_chunk_shape)
 
             if ch_kwargs["pipeline"]["resampler1"]:
                 resample_kwargs = add_chunk_kwargs(
@@ -545,6 +556,7 @@ class App(holoscan.core.Application):
                     // resample_kwargs["down"],
                     last_chunk_shape[1],
                 )
+                op_dict["resampler1"] = (resampler1, last_chunk_shape)
 
             if ch_kwargs["pipeline"]["resampler2"]:
                 resample_kwargs = add_chunk_kwargs(
@@ -561,6 +573,9 @@ class App(holoscan.core.Application):
                     // resample_kwargs["down"],
                     last_chunk_shape[1],
                 )
+                op_dict["resampler2"] = (resampler2, last_chunk_shape)
+
+            self.add_spectrogram_flow(ch, cuda_stream_pool, op_dict)
 
             if ch_kwargs["pipeline"]["int_converter"]:
                 int_converter = rf_array.TypeConversionComplexFloatToInt(
