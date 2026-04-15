@@ -17,6 +17,7 @@ channel0:
   basic_network:
     dst_port: 60134 # UDP destination port for packets
   packet:
+    num_samples: 6393750
     spoof_header: true
     packet_skip_bytes: 64
     header_metadata:
