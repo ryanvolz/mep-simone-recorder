@@ -31,19 +31,19 @@ channel0:
   resampler0:
     up: 1
     down: 31
-    outrate_cufoff: 1.0
+    outrate_cutoff: 1.0
     outrate_transition_width: 1.90303
     attenuation_db: 103
   resampler1:
     up: 1
     down: 5
-    outrate_cufoff: 1.0
+    outrate_cutoff: 1.0
     outrate_transition_width: 1.51515
     attenuation_db: 103
   resampler2:
     up: 8
     down: 33
-    outrate_cufoff: 1.0
+    outrate_cutoff: 1.0
     outrate_transition_width: 0.2
     attenuation_db: 99.725
   spectrogram_mqtt:
