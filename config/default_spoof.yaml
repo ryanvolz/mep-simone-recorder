@@ -16,6 +16,36 @@
 channel0:
   basic_network:
     dst_port: 60134 # UDP destination port for packets
+  packet:
+    spoof_header: true
+    packet_skip_bytes: 64
+    header_metadata:
+      start_sample_idx: 0
+      sample_rate_numerator: 63937500
+      sample_rate_denominator: 1
+      freq_idx: 31650
+      num_subchannels: 1
+      pkt_samples: 2048
+      bits_per_int: 16
+      is_complex: 1
+  resampler0:
+    up: 1
+    down: 31
+    outrate_cufoff: 1.0
+    outrate_transition_width: 1.90303
+    attenuation_db: 103
+  resampler1:
+    up: 1
+    down: 5
+    outrate_cufoff: 1.0
+    outrate_transition_width: 1.51515
+    attenuation_db: 103
+  resampler2:
+    up: 8
+    down: 33
+    outrate_cufoff: 1.0
+    outrate_transition_width: 0.2
+    attenuation_db: 99.725
   spectrogram_mqtt:
     service_name: recorder_fft_ch000
   spectrogram_output:
@@ -24,7 +54,7 @@ channel0:
     channel_dir: simone/ch000
 
 channel1:
-  enabled: true
+  enabled: false
   pipeline:
     spectrogram: false
   basic_network:
