@@ -77,7 +77,7 @@ holoscan_logger.addHandler(holoscan_handler)
 jsonargparse.set_parsing_settings(docstring_parse_attribute_docstrings=True)
 
 
-DEFAULT_BATCH_SIZE = 625
+DEFAULT_BATCH_SIZE = 3125
 DEFAULT_MAX_PACKET_SIZE = 8256
 DEFAULT_NUM_SUBCHANNELS = 1
 
@@ -155,7 +155,7 @@ def build_channel_subparser(parser, ch):
         type=NetConnectorBasicParams,
         default=NetConnectorBasicParams(
             batch_size=DEFAULT_BATCH_SIZE,
-            batch_capacity=25,
+            batch_capacity=10,
             max_packet_size=DEFAULT_MAX_PACKET_SIZE,
             num_subchannels=DEFAULT_NUM_SUBCHANNELS,
             num_samples=6400000,
