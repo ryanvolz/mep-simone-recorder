@@ -20,17 +20,17 @@ channel0:
     resampler1: false
     resampler2: false
     spec_after: converter
-    spec_resampler:
-      up: 1
-      down: 32
-      outrate_cutoff: 1.0
-      outrate_transition_width: 0.2
-      attenuation_db: 60
     spectrogram_output: false
     int_converter: true
     metadata: false
   basic_network:
     dst_port: 60132 # UDP destination port for packets
+  spec_resampler:
+    up: 1
+    down: 32
+    outrate_cutoff: 1.0
+    outrate_transition_width: 0.2
+    attenuation_db: 60
   spectrogram_mqtt:
     service_name: recorder_fft_ch002
   drf_sink:
