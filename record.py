@@ -69,7 +69,6 @@ def run(freq_mhz=32, channel_str="A,B", config_name="default"):
     )
     time.sleep(10)
     client.publish("rfsoc/command", json.dumps({"task_name": "capture_next_pps"}))
-    client.publish("rfsoc/command", json.dumps({"task_name": "get tlm"}))
     # now that we've started, monitor recorder status to be able to restart if it stops
     client.subscribe(f"dt/simone/recorder/{node_id}/status")
     try:
