@@ -53,17 +53,11 @@ def run(freq_mhz=32, channel_str="A,B", config_name="default"):
     client.publish("rfsoc/command", json.dumps({"task_name": "reset"}))
     client.publish(
         "rfsoc/command",
-        json.dumps({"task_name": "set", "arguments": f"freq_IF {freq_mhz}"}),
-    )
-    client.publish(
-        "rfsoc/command",
-        json.dumps(
-            {"task_name": "set", "arguments": f"freq_metadata {freq_mhz * 1e6}"}
-        ),
-    )
-    client.publish(
-        "rfsoc/command",
         json.dumps({"task_name": "set", "arguments": f"channel {channel_str}"}),
+    )
+    client.publish(
+        "rfsoc/command",
+        json.dumps({"task_name": "set", "arguments": f"freq_IF {freq_mhz}"}),
     )
     client.publish(
         f"cmd/simone/recorder/{node_id}/request",
