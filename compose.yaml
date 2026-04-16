@@ -1,33 +1,36 @@
 services:
-    simone_recorder:
-        build:
-            context: .
-            target: simone
-        container_name: simone_recorder
-        environment:
-            - HOLOSCAN_EXECUTOR_LOG_LEVEL=WARN
-            - HOLOSCAN_LOG_LEVEL=INFO
-            - HOLOSCAN_LOG_FORMAT=DEFAULT
-            - PYTHONUNBUFFERED=1
-            - RECORDER_ANNOUNCE_TOPIC=dt/simone/{service.name}/{service.node_id}/announce
-            - RECORDER_COMMAND_TOPIC=cmd/simone/{service.name}/{service.node_id}/request
-            - RECORDER_CONFIG_PATH=/config
-            - RECORDER_OUTPUT_PATH=/data/simone/ringbuffer
-            - RECORDER_RAM_RINGBUFFER_PATH=/ramdisk
-            - RECORDER_RESPONSE_TOPIC=dt/simone/{service.name}/{service.node_id}/request
-            - RECORDER_START_CONFIG=default
-            - RECORDER_STATUS_TOPIC=dt/simone/{service.name}/{service.node_id}/status
-            - RECORDER_TMP_RINGBUFFER_PATH=/data/simone/tmp-ringbuffer
-        network_mode: host
-        pull_policy: build
-        restart: unless-stopped
-        runtime: nvidia
-        tmpfs:
-            - /ramdisk:mode=777,uid=${UID},gid=${GID},nodev,nosuid,noexec,size=1G
-        user: ${UID}:${GID}
-        volumes:
-            - ./config:/config
-            - /data:/data
-            - /etc/group:/etc/group:ro
-            - /etc/passwd:/etc/passwd:ro
-            - /etc/shadow:/etc/shadow:ro
+  simone_recorder:
+    build:
+      context: .
+      target: simone
+    container_name: simone_recorder
+    environment:
+      - HOLOSCAN_EXECUTOR_LOG_LEVEL=WARN
+      - HOLOSCAN_LOG_LEVEL=INFO
+      - HOLOSCAN_LOG_FORMAT=DEFAULT
+      - PYTHONUNBUFFERED=1
+      - RECORDER_ANNOUNCE_TOPIC=dt/simone/{service.name}/{service.node_id}/announce
+      - RECORDER_COMMAND_TOPIC=cmd/simone/{service.name}/{service.node_id}/request
+      - RECORDER_CONFIG_PATH=/config
+      - RECORDER_OUTPUT_PATH=/data/simone/ringbuffer
+      - RECORDER_RAM_RINGBUFFER_PATH=/ramdisk
+      - RECORDER_RESPONSE_TOPIC=dt/simone/{service.name}/{service.node_id}/request
+      - RECORDER_START_CONFIG=default
+      - RECORDER_STATUS_TOPIC=dt/simone/{service.name}/{service.node_id}/status
+      - RECORDER_TMP_RINGBUFFER_PATH=/data/simone/tmp-ringbuffer
+    network_mode: host
+    pull_policy: build
+    restart: unless-stopped
+    runtime: nvidia
+    tmpfs:
+      - /ramdisk:mode=777,uid=${UID},gid=${GID},nodev,nosuid,noexec,size=1G
+    ulimits:
+      # increase stack limit to prevent failed allocations
+      stack: 67108864
+    user: ${UID}:${GID}
+    volumes:
+      - ./config:/config
+      - /data:/data
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
