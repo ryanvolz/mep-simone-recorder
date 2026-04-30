@@ -438,7 +438,7 @@ class App(holoscan.core.Application):
                 )
                 self.add_flow(spectrogram, spectrogram_output)
 
-    def add_channel_flow(self, ch, cuda_stream_pool):
+    def add_channel_flow(self, ch, cuda_stream_pool, priority_stream_pool):
         ch_kwargs = self.kwargs(ch)
 
         if not ch_kwargs["enabled"]:
@@ -458,7 +458,7 @@ class App(holoscan.core.Application):
         packet_kwargs = ch_kwargs["packet"]
         net_connector_rx = rf_array.NetConnectorBasic(
             self,
-            cuda_stream_pool,
+            priority_stream_pool,
             name=f"{ch}_net_connector_rx",
             **packet_kwargs,
         )
@@ -646,9 +646,19 @@ class App(holoscan.core.Application):
             reserved_size=1,
             max_size=0,
         )
+        priority_stream_pool = holoscan.resources.CudaStreamPool(
+            self,
+            name="priority_stream_pool",
+            stream_flags=1,  # cudaStreamNonBlocking
+            stream_priority=-2,  # lower means higher priority
+            reserved_size=1,
+            max_size=0,
+        )
 
         for ch_idx in range(2):
-            self.add_channel_flow(f"channel{ch_idx}", cuda_stream_pool)
+            self.add_channel_flow(
+                f"channel{ch_idx}", cuda_stream_pool, priority_stream_pool
+            )
 
 
 def main():
