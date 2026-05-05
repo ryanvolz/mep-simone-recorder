@@ -81,6 +81,7 @@ def run(freq_mhz=32, channel_str="A,B", config_name="default"):
             f"cmd/simone/recorder/{node_id}/request",
             json.dumps({"task_name": "disable"}),
         )
+        client.publish("rfsoc/command", json.dumps({"task_name": "reset"}))
         client.loop_stop()
 
 
