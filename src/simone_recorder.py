@@ -257,7 +257,7 @@ def build_channel_subparser(parser, ch):
             nfft=None,
             detrend=False,
             reduce_op="max",
-            num_spectra_per_chunk=6,
+            num_spectra_per_chunk=5,
         ),
     )
     parser.add_argument(
@@ -278,7 +278,7 @@ def build_channel_subparser(parser, ch):
         f"--{ch}.spectrogram_output",
         type=SpectrogramOutputParams,
         default=SpectrogramOutputParams(
-            num_spectra_per_output=1800,
+            num_spectra_per_output=1500,
             figsize=[6.4, 4.8],
             dpi=200,
             col_wrap=1,
