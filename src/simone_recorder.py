@@ -77,7 +77,7 @@ holoscan_logger.addHandler(holoscan_handler)
 jsonargparse.set_parsing_settings(docstring_parse_attribute_docstrings=True)
 
 
-DEFAULT_BATCH_SIZE = 3125
+DEFAULT_BATCH_SIZE = 6250
 DEFAULT_MAX_PACKET_SIZE = 8256
 DEFAULT_NUM_SUBCHANNELS = 1
 
@@ -110,10 +110,10 @@ class PipelineParams:
     "Enable / disable the second stage resampler"
     resampler2: bool = True
     "Enable / disable the third stage resampler"
-    spec_after: str = "rotator"
-    "Which operator form converter through resampler2 to place the spectrogram after"
-    spec_resampler: bool = True
-    "Enable / disable the zeroth stage pre-spectrogram resampler"
+    spec_after: str = "resampler0"
+    "Which operator from converter through resampler2 to place the spectrogram after"
+    spec_resampler: bool = False
+    "Enable / disable the post-spec_after pre-spectrogram resampler"
     spectrogram: bool = True
     "Enable / disable spectrogram processing"
     spectrogram_mqtt: bool = True
@@ -158,7 +158,7 @@ def build_channel_subparser(parser, ch):
             batch_capacity=10,
             max_packet_size=DEFAULT_MAX_PACKET_SIZE,
             num_subchannels=DEFAULT_NUM_SUBCHANNELS,
-            num_samples=6400000,
+            num_samples=12800000,
             buffer_size=5,
             freq_idx_scaling=1000,
             freq_idx_offset=0,
@@ -257,7 +257,7 @@ def build_channel_subparser(parser, ch):
             nfft=None,
             detrend=False,
             reduce_op="max",
-            num_spectra_per_chunk=1,
+            num_spectra_per_chunk=6,
         ),
     )
     parser.add_argument(
@@ -278,7 +278,7 @@ def build_channel_subparser(parser, ch):
         f"--{ch}.spectrogram_output",
         type=SpectrogramOutputParams,
         default=SpectrogramOutputParams(
-            num_spectra_per_output=600,
+            num_spectra_per_output=1800,
             figsize=[6.4, 4.8],
             dpi=200,
             col_wrap=1,
