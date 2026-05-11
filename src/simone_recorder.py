@@ -102,7 +102,7 @@ class PipelineParams:
     "Enable / disable subchannel selector"
     converter: bool = True
     "Enable / disable complex int to float converter"
-    rotator: bool = True
+    rotator: bool = False
     "Enable / disable frequency rotator"
     resampler0: bool = True
     "Enable / disable the first stage resampler"
