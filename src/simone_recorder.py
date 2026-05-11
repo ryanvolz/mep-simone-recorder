@@ -438,7 +438,9 @@ class App(holoscan.core.Application):
                 )
                 self.add_flow(spectrogram, spectrogram_output)
 
-    def add_channel_flow(self, ch, cuda_stream_pool, priority_stream_pool):
+    def add_channel_flow(
+        self, ch, cuda_stream_pool, priority_stream_pool, network_thread_pool
+    ):
         ch_kwargs = self.kwargs(ch)
 
         if not ch_kwargs["enabled"]:
@@ -454,6 +456,7 @@ class App(holoscan.core.Application):
             capacity=ch_kwargs["packet"].get("batch_capacity", 4),
             policy=0,  # pop
         )
+        network_thread_pool.add(basic_net_rx, True)
 
         packet_kwargs = ch_kwargs["packet"]
         net_connector_rx = rf_array.NetConnectorBasic(
@@ -472,6 +475,7 @@ class App(holoscan.core.Application):
             capacity=packet_kwargs.get("buffer_size", 4),
             policy=0,  # pop
         )
+        network_thread_pool.add(net_connector_rx, True)
         self.add_flow(basic_net_rx, net_connector_rx, {("burst_out", "burst_in")})
 
         last_chunk_shape = (
@@ -654,10 +658,14 @@ class App(holoscan.core.Application):
             reserved_size=1,
             max_size=0,
         )
+        network_thread_pool = self.make_thread_pool("network_thread_pool", 4)
 
         for ch_idx in range(2):
             self.add_channel_flow(
-                f"channel{ch_idx}", cuda_stream_pool, priority_stream_pool
+                f"channel{ch_idx}",
+                cuda_stream_pool,
+                priority_stream_pool,
+                network_thread_pool,
             )
 
 
