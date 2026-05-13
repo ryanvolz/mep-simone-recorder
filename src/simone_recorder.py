@@ -456,7 +456,14 @@ class App(holoscan.core.Application):
             capacity=ch_kwargs["packet"].get("batch_capacity", 4),
             policy=0,  # pop
         )
-        network_thread_pool.add(basic_net_rx, True)
+        network_thread_pool.add_realtime(
+            basic_net_rx,
+            sched_policy=holoscan.resources.SchedulingPolicy.SCHED_DEADLINE,
+            pin_operator=True,
+            sched_runtime=100000,
+            sched_deadline=200000,
+            sched_period=200000,
+        )
 
         packet_kwargs = ch_kwargs["packet"]
         net_connector_rx = rf_array.NetConnectorBasic(
@@ -475,7 +482,12 @@ class App(holoscan.core.Application):
             capacity=packet_kwargs.get("buffer_size", 4),
             policy=0,  # pop
         )
-        network_thread_pool.add(net_connector_rx, True)
+        network_thread_pool.add_realtime(
+            net_connector_rx,
+            sched_policy=holoscan.resources.SchedulingPolicy.SCHED_RR,
+            pin_operator=True,
+            sched_priority=10,
+        )
         self.add_flow(basic_net_rx, net_connector_rx, {("burst_out", "burst_in")})
 
         last_chunk_shape = (
