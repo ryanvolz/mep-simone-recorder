@@ -16,6 +16,9 @@
 FROM ghcr.io/ryanvolz/holoscan_recorder/mep:edge AS simone
 LABEL org.opencontainers.image.description="Holoscan SIMONe recorder"
 
+# Set capabilities on python binary needed by the recorder script for realtime
+RUN setcap cap_sys_nice+ep $(realpath $(which python3))
+
 # Copy scripts specific to this image
 COPY --chmod=777 src/simone_recorder.py /app/simone_recorder.py
 COPY --chmod=777 config /config
