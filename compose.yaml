@@ -5,6 +5,10 @@ services:
       pull: true
       target: simone
     container_name: simone_recorder
+    cap_add:
+      - SYS_NICE
+    ulimits:
+      rtprio: 99
     environment:
       - HOLOSCAN_EXECUTOR_LOG_LEVEL=WARN
       - HOLOSCAN_LOG_LEVEL=INFO
