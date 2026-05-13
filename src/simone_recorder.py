@@ -465,7 +465,7 @@ class App(holoscan.core.Application):
             basic_net_rx,
             sched_policy=holoscan.resources.SchedulingPolicy.SCHED_DEADLINE,
             pin_operator=True,
-            pin_cores=[network_pin_cores[0]],
+            # pin_cores=[network_pin_cores[0]],
             sched_runtime=100000,
             sched_deadline=200000,
             sched_period=200000,
