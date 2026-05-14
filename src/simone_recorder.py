@@ -444,7 +444,6 @@ class App(holoscan.core.Application):
         cuda_stream_pool,
         priority_stream_pool,
         network_thread_pool,
-        network_pin_cores,
     ):
         ch_kwargs = self.kwargs(ch)
 
@@ -465,7 +464,6 @@ class App(holoscan.core.Application):
             basic_net_rx,
             sched_policy=holoscan.resources.SchedulingPolicy.SCHED_DEADLINE,
             pin_operator=True,
-            # pin_cores=[network_pin_cores[0]],
             sched_runtime=100000,
             sched_deadline=200000,
             sched_period=200000,
@@ -492,7 +490,6 @@ class App(holoscan.core.Application):
             net_connector_rx,
             sched_policy=holoscan.resources.SchedulingPolicy.SCHED_RR,
             pin_operator=True,
-            pin_cores=[network_pin_cores[1]],
             sched_priority=10,
         )
         self.add_flow(basic_net_rx, net_connector_rx, {("burst_out", "burst_in")})
@@ -678,7 +675,6 @@ class App(holoscan.core.Application):
             max_size=0,
         )
         network_thread_pool = self.make_thread_pool("network_thread_pool", 4)
-        network_pin_cores = [2, 3, 4, 5]
 
         for ch_idx in range(2):
             self.add_channel_flow(
@@ -686,7 +682,6 @@ class App(holoscan.core.Application):
                 cuda_stream_pool,
                 priority_stream_pool,
                 network_thread_pool,
-                network_pin_cores[ch_idx * 2 : (ch_idx + 1) * 2],
             )
 
 
