@@ -452,6 +452,11 @@ class App(holoscan.core.Application):
 
         basic_net_rx = basic_network.BasicNetworkOpRx(
             self,
+            holoscan.conditions.PeriodicCondition(
+                self,
+                recess_period=10000000,
+                policy=holoscan.conditions.PeriodicConditionPolicy.NO_CATCH_UP_MISSED_TICKS,
+            ),
             name=f"{ch}_basic_network_rx",
             **ch_kwargs["basic_network"],
         )
@@ -472,6 +477,11 @@ class App(holoscan.core.Application):
         packet_kwargs = ch_kwargs["packet"]
         net_connector_rx = rf_array.NetConnectorBasic(
             self,
+            holoscan.conditions.PeriodicCondition(
+                self,
+                recess_period=10000000,
+                policy=holoscan.conditions.PeriodicConditionPolicy.NO_CATCH_UP_MISSED_TICKS,
+            ),
             priority_stream_pool,
             name=f"{ch}_net_connector_rx",
             **packet_kwargs,
