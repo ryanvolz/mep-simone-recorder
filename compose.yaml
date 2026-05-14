@@ -30,6 +30,8 @@ services:
     tmpfs:
       - /ramdisk:mode=777,uid=${UID},gid=${GID},nodev,nosuid,noexec,size=1G
     user: ${UID}:${GID}
+    group_add:
+      - 995  # debug
     volumes:
       - ./config:/config
       - /data:/data
