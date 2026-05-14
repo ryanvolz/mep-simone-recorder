@@ -7,6 +7,7 @@ services:
     container_name: simone_recorder
     cap_add:
       - SYS_NICE
+      - SYS_PTRACE
     ulimits:
       rtprio: 99
     environment:
