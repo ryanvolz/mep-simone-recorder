@@ -491,9 +491,12 @@ class App(holoscan.core.Application):
             capacity=packet_kwargs.get("batch_capacity", 4),
             policy=0,  # pop
         )
-        net_connector_rx.spec.outputs["rf_out"].connector(
+        net_connector_rx.spec.outputs["rf_out"].condition(
+            holoscan.core.ConditionType.DOWNSTREAM_MESSAGE_AFFORDABLE,
+            min_size=packet_kwargs.get("buffer_size", 4),
+        ).connector(
             holoscan.core.IOSpec.ConnectorType.DOUBLE_BUFFER,
-            capacity=packet_kwargs.get("buffer_size", 4),
+            capacity=2 * packet_kwargs.get("buffer_size", 4),
             policy=0,  # pop
         )
         network_thread_pool.add_realtime(
@@ -508,7 +511,7 @@ class App(holoscan.core.Application):
             ch_kwargs["packet"]["num_samples"],
             ch_kwargs["packet"]["num_subchannels"],
         )
-        last_buffer_capacity = packet_kwargs.get("buffer_size", 4)
+        last_buffer_capacity = 2 * packet_kwargs.get("buffer_size", 4)
         last_op = net_connector_rx
 
         if ch_kwargs["pipeline"]["selector"]:
