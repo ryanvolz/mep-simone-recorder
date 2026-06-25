@@ -460,10 +460,12 @@ class App(holoscan.core.Application):
             name=f"{ch}_basic_network_rx",
             **ch_kwargs["basic_network"],
         )
-        basic_net_rx.spec.outputs["burst_out"].connector(
+        basic_net_rx.spec.outputs["burst_out"].condition(
+            holoscan.core.ConditionType.DOWNSTREAM_MESSAGE_AFFORDABLE,
+            min_size=1,
+        ).connector(
             holoscan.core.IOSpec.ConnectorType.DOUBLE_BUFFER,
             capacity=ch_kwargs["packet"].get("batch_capacity", 4),
-            policy=0,  # pop
         )
         network_thread_pool.add_realtime(
             basic_net_rx,
