@@ -352,6 +352,7 @@ class App(holoscan.core.Application):
         last_op, last_chunk_shape = op_dict[after_op_name]
 
         if ch_kwargs["pipeline"]["spectrogram"]:
+            spec_thread_pool = self.make_thread_pool(f"{ch}_spectrogram_thread_pool", 3)
             if ch_kwargs["pipeline"]["spec_resampler"]:
                 resample_kwargs = add_chunk_kwargs(
                     last_chunk_shape, **ch_kwargs["spec_resampler"]
@@ -385,6 +386,7 @@ class App(holoscan.core.Application):
             #     port_type=holoscan.core.IOSpec.IOType.OUTPUT,
             #     policy=holoscan.core.IOSpec.QueuePolicy.POP,
             # )
+            spec_thread_pool.add(spectrogram, True)
             self.add_flow(last_op, spectrogram)
 
             if ch_kwargs["pipeline"]["spectrogram_mqtt"]:
@@ -409,6 +411,7 @@ class App(holoscan.core.Application):
                     name=f"{ch}_spectrogram_mqtt",
                     **spec_mqtt_kwargs,
                 )
+                spec_thread_pool.add(spectrogram_mqtt, True)
                 self.add_flow(spectrogram, spectrogram_mqtt)
 
             if ch_kwargs["pipeline"]["spectrogram_output"]:
@@ -436,6 +439,7 @@ class App(holoscan.core.Application):
                     name=f"{ch}_spectrogram_output",
                     **spec_out_kwargs,
                 )
+                spec_thread_pool.add(spectrogram_output, True)
                 self.add_flow(spectrogram, spectrogram_output)
 
     def add_channel_flow(
